@@ -33,11 +33,11 @@
       - credentials
       - plain-credentials
     admin_username: "admin"
-    admin_password: "admin:jenkins@admin@2023#"
+    admin_password: "jenkins@admin@2023#"
     gitlab_api_token: "glpat-kqv_EHts42t_9bX36_Bg"
     gitlab_manifest_token: "glpat-kA6sn_Jq9DC7zeGaQAMh"
     dockerhub_token: "dckr_pat_qZXy3pR6vZ3VvCaK2YuktdtLwWw"
-    gitlab_repo_url: "https://gitlab.com/your-group/your-repo.git"
+    gitlab_repo_url: "https://gitlab.com/khadija.laamiri19/colocation-api.git"
 
   tasks:
     - name: Update apt cache
