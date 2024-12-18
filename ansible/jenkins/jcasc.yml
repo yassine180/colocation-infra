@@ -1,0 +1,37 @@
+jenkins:
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "jenkins@admin@2023#"
+    authorizationStrategy:
+      globalMatrix:
+        permissions:
+          - "Overall/Administer:admin"
+          - "Overall/Read:authenticated"
+
+security:
+  queueItemAuthenticator:
+    authenticators:
+      - global:
+          strategy: triggeringUsersAuthorizationStrategy
+
+tool:
+  git:
+    installations:
+      - name: git
+        home: git
+  jdk:
+    installations:
+      - name: jdk17
+        home: /usr/bin/java
+  maven:
+    installations:
+      - name: maven
+        home: /usr/bin/mvn
+
+  # sonar:
+  #   installations:
+  #     - name: sonar
+  #       home: git

@@ -1,0 +1,214 @@
+---
+- name: Automate Jenkins installation and configuration on Ubuntu
+  hosts: jenkins
+  become: true
+
+  vars:
+    jenkins_plugins:
+      - ant
+      - antisamy-markup-formatter
+      - build-timeout
+      - cloudbees-folder
+      - configuration-as-code
+      - credentials-binding
+      - email-ext
+      - git
+      - github-branch-source
+      - gradle
+      - ldap
+      - mailer
+      - matrix-auth
+      - pam-auth
+      - pipeline-github-lib
+      - pipeline-stage-view
+      - timestamper
+      - workflow-aggregator
+      - ws-cleanup
+      - build-timestamp
+      - pipeline-maven
+      - pipeline-utility-steps
+      - slack
+      - docker-workflow
+      - docker-build-publish
+      - credentials
+      - plain-credentials
+    admin_username: "admin"
+    admin_password: "admin:jenkins@admin@2023#"
+    gitlab_api_token: "glpat-kqv_EHts42t_9bX36_Bg"
+    gitlab_manifest_token: "glpat-kA6sn_Jq9DC7zeGaQAMh"
+    dockerhub_token: "dckr_pat_qZXy3pR6vZ3VvCaK2YuktdtLwWw"
+    gitlab_repo_url: "https://gitlab.com/your-group/your-repo.git"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - openjdk-21-jdk
+          - maven
+          - wget
+          - gnupg
+        state: present
+
+    - name: Add Jenkins GPG key to keyrings
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+
+    - name: Add Jenkins repository
+      copy:
+        dest: /etc/apt/sources.list.d/jenkins.list
+        content: |
+          deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Ensure Jenkins is started and enabled
+      systemd:
+        name: jenkins
+        state: started
+        enabled: true
+
+    - name: Wait for Jenkins to be ready
+      wait_for:
+        port: 8080
+        host: localhost
+        timeout: 30
+
+    - name: Retrieve initial admin password
+      command: "cat /var/lib/jenkins/secrets/initialAdminPassword"
+      register: jenkins_initial_password
+      no_log: true
+
+    - name: Install Jenkins CLI
+      get_url:
+        url: http://localhost:8080/jnlpJars/jenkins-cli.jar
+        dest: /tmp/jenkins-cli.jar
+
+    - name: Ensure Jenkins Groovy scripts directory exists
+      file:
+        path: /var/lib/jenkins/init.groovy.d
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: "0755"
+
+    - name: Create Jenkins admin user via groovy script
+      copy:
+        dest: /var/lib/jenkins/init.groovy.d/basic-security.groovy
+        content: |
+          import jenkins.model.*
+          import hudson.security.*
+
+          def instance = Jenkins.getInstance()
+          def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+          hudsonRealm.createAccount("{{ admin_username }}", "{{ admin_password }}")
+          instance.setSecurityRealm(hudsonRealm)
+          def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+          instance.setAuthorizationStrategy(strategy)
+          instance.save()
+
+    - name: Restart Jenkins to apply security settings
+      systemd:
+        name: jenkins
+        state: restarted
+
+    - name: Install Jenkins plugins
+      shell: |
+        java -jar /tmp/jenkins-cli.jar -s http://localhost:8080/ -auth {{ admin_username }}:{{ admin_password }} install-plugin {{ item }}
+      with_items: "{{ jenkins_plugins }}"
+
+    - name: Restart Jenkins after plugin installation
+      systemd:
+        name: jenkins
+        state: restarted
+
+    # - name: Add GitLab API token to Jenkins credentials
+    #   shell: |
+    #     java -jar /tmp/jenkins-cli.jar -s http://localhost:8080/ -auth {{ admin_username }}:{{ admin_password }} create-credentials-by-xml system::system::jenkins "(global)" << EOF
+    #     <com.cloudbees.plugins.credentials.impl.StringCredentialsImpl>
+    #       <scope>GLOBAL</scope>
+    #       <id>gitlab_api_token</id>
+    #       <description>GitLab API Token</description>
+    #       <secret>{{ gitlab_api_token }}</secret>
+    #     </com.cloudbees.plugins.credentials.impl.StringCredentialsImpl>
+    #     EOF
+
+    # - name: Add GitLab Manifest token to Jenkins credentials
+    #   shell: |
+    #     java -jar /tmp/jenkins-cli.jar -s http://localhost:8080/ -auth {{ admin_username }}:{{ admin_password }} create-credentials-by-xml system::system::jenkins "(global)" << EOF
+    #     <com.cloudbees.plugins.credentials.impl.StringCredentialsImpl>
+    #       <scope>GLOBAL</scope>
+    #       <id>gitlab_manifest</id>
+    #       <description>GitLab Manifest Token</description>
+    #       <secret>{{ gitlab_manifest_token }}</secret>
+    #     </com.cloudbees.plugins.credentials.impl.StringCredentialsImpl>
+    #     EOF
+
+    # - name: Add Dockerhub token to Jenkins credentials
+    #   shell: |
+    #     java -jar /tmp/jenkins-cli.jar -s http://localhost:8080/ -auth {{ admin_username }}:{{ admin_password }} create-credentials-by-xml system::system::jenkins "(global)" << EOF
+    #     <com.cloudbees.plugins.credentials.impl.StringCredentialsImpl>
+    #       <scope>GLOBAL</scope>
+    #       <id>enami_dockerhub</id>
+    #       <description>GDockerhub Token</description>
+    #       <secret>{{ dockerhub_token }}</secret>
+    #     </com.cloudbees.plugins.credentials.impl.StringCredentialsImpl>
+    #     EOF
+
+    # - name: Create Jenkins pipelines
+    #   shell: |
+    #     for branch in notification messagerie geolocation annonces-service user gateway discoveryserver; do
+    #       java -jar /tmp/jenkins-cli.jar -s http://localhost:8080/ -auth {{ admin_username }}:{{ admin_password }} create-job $branch << EOF
+    #       <flow-definition plugin="workflow-job">
+    #         <actions/>
+    #         <description>Pipeline for branch $branch</description>
+    #         <keepDependencies>false</keepDependencies>
+    #         <properties/>
+    #         <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps">
+    #           <scm class="hudson.plugins.git.GitSCM" plugin="git">
+    #             <configVersion>2</configVersion>
+    #             <userRemoteConfigs>
+    #               <hudson.plugins.git.UserRemoteConfig>
+    #                 <url>{{ gitlab_repo_url }}</url>
+    #                 <credentialsId>gitlab_api_token</credentialsId>
+    #               </hudson.plugins.git.UserRemoteConfig>
+    #             </userRemoteConfigs>
+    #             <branches>
+    #               <hudson.plugins.git.BranchSpec>
+    #                 <name>*/$branch</name>
+    #               </hudson.plugins.git.BranchSpec>
+    #             </branches>
+    #             <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    #             <submoduleCfg class="empty-list"/>
+    #             <extensions/>
+    #           </scm>
+    #           <scriptPath>Jenkinsfile</scriptPath>
+    #           <lightweight>true</lightweight>
+    #         </definition>
+    #         <triggers/>
+    #         <disabled>false</disabled>
+    #       </flow-definition>
+    #       EOF
+    #     done
+    #   args:
+    #     executable: /bin/bash
+
+    # - name: Clean up Jenkins CLI
+    #   file:
+    #     path: /tmp/jenkins-cli.jar
+    #     state: absent
+
+    # - name: Display Jenkins admin credentials
+    #   debug:
+    #     msg: "Jenkins is configured. Admin credentials: Username={{ admin_username }}, Password={{ admin_password }}"
