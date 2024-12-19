@@ -22,7 +22,7 @@ resource "aws_eip" "jenkins-server-eip" {
 
 resource "aws_instance" "jenkins-server" {
   ami               = "ami-0c7217cdde317cfec"
-  instance_type     = "t2.micro"
+  instance_type     = "t2.large"
   key_name          = "jenkins-ssh-key"
   availability_zone = "us-east-1a"
 

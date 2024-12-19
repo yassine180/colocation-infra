@@ -22,7 +22,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSClusterPolicy" {
 }
 # Create EKS Cluster
 resource "aws_eks_cluster" "eks-cluster" {
-  name     = "colocation-eks"
+  name     = "app-store-eks"
   role_arn = aws_iam_role.eks-role.arn
 
   vpc_config {
@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
 #create node group
 resource "aws_eks_node_group" "eks-node-group" {
   cluster_name    = aws_eks_cluster.eks-cluster.name
-  node_group_name = "colocation-nodes"
+  node_group_name = "app-store-nodes"
   node_role_arn   = aws_iam_role.node-assume-role.arn
   subnet_ids      = [aws_subnet.private-subnet-1.id, aws_subnet.private-subnet-2.id]
 
