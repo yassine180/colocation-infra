@@ -71,7 +71,7 @@ resource "aws_subnet" "private-subnet-1" {
 resource "aws_subnet" "private-subnet-2" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = var.private-subnet-2-cidr
-  availability_zone       = "us-east-1b"
+  availability_zone       = "us-east-1a"
   map_public_ip_on_launch = false
 
   tags = {
@@ -80,3 +80,15 @@ resource "aws_subnet" "private-subnet-2" {
   }
 }
 
+# Create Private Subnet 3
+resource "aws_subnet" "private-subnet-3" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.private-subnet-3-cidr
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = false
+
+  tags = {
+    Project = "Colocation"
+    Name    = "Private Subnet 3"
+  }
+}

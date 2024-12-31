@@ -25,11 +25,11 @@ ansible_ssh_private_key_file=ansible/keys/aws-ssh-key.pem
 EOT
 
 # sleep 20
-# ansible-playbook -i ansible/inventory.cfg ansible/playbooks/openvpn-playbook.yml -vvv
+# ansible-playbook -i ansible/inventory.cfg ansible/playbooks/jenkins-playbook.yml -vvv
 # sleep 20
 
-# scp -i "ansible/keys/aws-ssh-key.pem" ubuntu@$openvpn_ip:/home/ubuntu/client-configs/files/admin.ovpn .
-# nohup sudo openvpn admin.ovpn &
+# scp -i "ansible/keys/aws-ssh-key.pem" ubuntu@$jenkins_ip:/home/ubuntu/client-configs/files/admin.ovpn .
+# nohup sudo jenkins admin.ovpn &
 # sleep 10
 
 # ssh-keyscan $jenkins_ip >> ~/.ssh/known_hosts

@@ -5,7 +5,7 @@ resource "aws_network_interface" "jenkins-server-nic" {
 
   tags = {
     Project = "Colocation"
-    Name    = "Jenkins NIC"
+    Name    = "jenkins NIC"
   }
 }
 
@@ -31,8 +31,46 @@ resource "aws_instance" "jenkins-server" {
     network_interface_id = aws_network_interface.jenkins-server-nic.id
   }
 
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp2"
+  }
+
   tags = {
     Project = "Colocation"
-    Name    = "Jenkins Server"
+    Name    = "jenkins Server"
   }
 }
+
+# resource "aws_network_interface" "jenkins-server-nic" {
+#   subnet_id       = aws_subnet.private-subnet-1.id
+#   private_ips     = ["10.10.20.100"]
+#   security_groups = [aws_security_group.jenkins-security-group.id]
+
+#   tags = {
+#     Project = "Colocation"
+#     Name    = "Jenkins NIC"
+#   }
+# }
+
+# resource "aws_instance" "jenkins-server" {
+#   ami               = "ami-0c7217cdde317cfec"
+#   instance_type     = "t2.large"
+#   key_name          = "aws-ssh-key"
+#   availability_zone = "us-east-1a"
+
+#   network_interface {
+#     device_index         = 0
+#     network_interface_id = aws_network_interface.jenkins-server-nic.id
+#   }
+
+#   root_block_device {
+#     volume_size = 30
+#     volume_type = "gp2"
+#   }
+
+#   tags = {
+#     Project = "Colocation"
+#     Name    = "Jenkins Server"
+#   }
+# }

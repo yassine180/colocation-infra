@@ -22,8 +22,14 @@ variable "private-subnet-2-cidr" {
   type        = string
 }
 
+variable "private-subnet-3-cidr" {
+  default     = "10.10.22.0/24"
+  description = "Private Subnet 3 CIDR Block"
+  type        = string
+}
+
 variable "ssh-location" {
   default     = "0.0.0.0/0"
-  description = "IP Address Allowd to SSH Into Jenkins Server"
+  description = "IP Address Allowd to SSH Into jenkins Host"
   type        = string
 }
